@@ -37,7 +37,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 
-import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.lib.envinject.EnvInjectLogger;
 import org.jenkinsci.plugins.envinject.EnvInjectBuilder;
 import org.jenkinsci.plugins.envinject.EnvInjectBuilderContributionAction;
@@ -246,7 +245,7 @@ public class MultiJobBuilder extends Builder implements DependencyDeclarer {
                 for( int i = 0; i < variables.length; i++ ) {
                     String previousValue = prevBuild.getEnvironment(listener).get(variables[i]);
                     String currentValue = build.getEnvironment(listener).get(variables[i]);
-                    if( !StringUtils.equals(previousValue, currentValue) ) {
+                    if( !Objects.equals(previousValue, currentValue) ) {
                         willResumeBuild = false;
                         listener.getLogger().println(String.format("Cannot resume the build, values for '%s' do not match: [%s][%s]", variables[i], previousValue, currentValue));
                         break;

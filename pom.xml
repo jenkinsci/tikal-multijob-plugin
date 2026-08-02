@@ -210,6 +210,7 @@
 		<jenkins.version>${jenkins.baseline}.3</jenkins.version>
 		<changelist>999999-SNAPSHOT</changelist>
 		<ban-junit4-imports.skip>false</ban-junit4-imports.skip>
+		<ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
 	</properties>
 
 </project>
