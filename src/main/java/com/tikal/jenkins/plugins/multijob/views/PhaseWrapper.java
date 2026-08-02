@@ -7,7 +7,6 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.Job;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.ObjectUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
