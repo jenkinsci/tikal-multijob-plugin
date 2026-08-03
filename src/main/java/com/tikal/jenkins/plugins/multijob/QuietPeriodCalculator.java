@@ -1,7 +1,11 @@
 package com.tikal.jenkins.plugins.multijob;
 
-import groovy.util.Eval;
+import groovy.lang.Binding;
 import hudson.model.BuildListener;
+import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.scriptsecurity.sandbox.RejectedAccessException;
+import org.jenkinsci.plugins.scriptsecurity.sandbox.groovy.SecureGroovyScript;
+import org.jenkinsci.plugins.scriptsecurity.scripts.ApprovalContext;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,6 +36,8 @@ public class QuietPeriodCalculator {
 
 		try {
 			return calculateOrThrow(quietPeriodGroovy, index);
+		} catch (RejectedAccessException e) {
+			throw e;
 		} catch (Throwable t) {
 			final String message =
 					"Error calculating quiet time for index " + index + " and quietPeriodGroovy [" + quietPeriodGroovy +
@@ -47,7 +53,19 @@ public class QuietPeriodCalculator {
 
 		assertPositiveIndex(index);
 
-		final Integer quietPeriod = (Integer) Eval.me(INDEX, index, quietPeriodGroovy);
+		final Object result;
+		try {
+			Binding binding = new Binding();
+			binding.setVariable(INDEX, index);
+			result = new SecureGroovyScript(quietPeriodGroovy, true, null)
+					.configuring(ApprovalContext.create())
+					.evaluate(Jenkins.get().getPluginManager().uberClassLoader, binding, listener);
+		} catch (RejectedAccessException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		final int quietPeriod = ((Number) result).intValue();
 		log(displayName + "Quiet period groovy=[" + quietPeriodGroovy + "], index=" + index + " -> quietPeriodGroovy=" + quietPeriod);
 		return quietPeriod;
 	}

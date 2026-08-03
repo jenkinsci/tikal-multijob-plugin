@@ -4,7 +4,7 @@ import com.tikal.jenkins.plugins.multijob.MultiJobBuild.SubBuild;
 import com.tikal.jenkins.plugins.multijob.PhaseJobsConfig.KillPhaseOnJobResultCondition;
 import com.tikal.jenkins.plugins.multijob.counters.CounterHelper;
 import com.tikal.jenkins.plugins.multijob.counters.CounterManager;
-import groovy.util.Eval;
+import groovy.lang.Binding;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -43,10 +43,14 @@ import org.jenkinsci.plugins.envinject.EnvInjectBuilder;
 import org.jenkinsci.plugins.envinject.EnvInjectBuilderContributionAction;
 import org.jenkinsci.plugins.envinject.service.EnvInjectActionSetter;
 import org.jenkinsci.plugins.envinject.service.EnvInjectEnvVars;
+import org.jenkinsci.plugins.scriptsecurity.sandbox.RejectedAccessException;
+import org.jenkinsci.plugins.scriptsecurity.sandbox.groovy.SecureGroovyScript;
+import org.jenkinsci.plugins.scriptsecurity.scripts.ApprovalContext;
 import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
+import org.kohsuke.stapler.verb.POST;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -210,7 +214,12 @@ public class MultiJobBuilder extends Builder implements DependencyDeclarer {
 
     public boolean evalCondition(final String condition, final AbstractBuild<?, ?> build, final BuildListener listener) {
         try {
-            return (Boolean) Eval.me(expandToken(condition, build, listener).trim());
+            String script = expandToken(condition, build, listener).trim();
+            return (Boolean) new SecureGroovyScript(script, true, null)
+                    .configuring(ApprovalContext.create().withItem(build.getProject()))
+                    .evaluate(Jenkins.get().getPluginManager().uberClassLoader, new Binding(), listener);
+        } catch (RejectedAccessException e) {
+            throw e;
         } catch (Exception e) {
             listener.getLogger().println("Can't evaluate expression, false is assumed: " + e.toString());
         }
@@ -1036,8 +1045,11 @@ public class MultiJobBuilder extends Builder implements DependencyDeclarer {
             return true;
         }
 
+        @POST
         public FormValidation doCheckQuietPeriodGroovy(@QueryParameter String value) {
-            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+            if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+                return FormValidation.ok();
+            }
             if (Util.fixEmptyAndTrim(value) == null) {
                 return FormValidation.ok();
             }
