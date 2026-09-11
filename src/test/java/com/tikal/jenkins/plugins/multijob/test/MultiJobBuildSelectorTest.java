@@ -32,8 +32,7 @@ class MultiJobBuildSelectorTest {
         // the exact build recorded by the MultiJob rather than the latest build.
         j.buildAndAssertSuccess(source);
 
-        MultiJobProject multiJob =
-                j.createProject(MultiJobProject.class, "multi-job");
+        MultiJobProject multiJob = j.createProject(MultiJobProject.class, "multi-job");
 
         MultiJobBuild multiJobBuild =
                 j.assertBuildStatus(Result.SUCCESS, multiJob.scheduleBuild2(0).get());
@@ -57,11 +56,7 @@ class MultiJobBuildSelectorTest {
 
         MultiJobBuildSelector selector = new MultiJobBuildSelector();
 
-        Run<?, ?> selectedBuild = selector.getBuild(
-                source,
-                new EnvVars(),
-                new BuildFilter(),
-                multiJobBuild);
+        Run<?, ?> selectedBuild = selector.getBuild(source, new EnvVars(), new BuildFilter(), multiJobBuild);
 
         // Verify the test actually exercises the custom-display-name case.
         assertNotEquals(source.getName(), source.getDisplayName());
